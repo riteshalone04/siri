@@ -1,17 +1,48 @@
-import requests
+import speech_recognition as sr
+import pyttsx3
+import openai
 
-# Define the repository owner and name
-owner = "octocat"
-repo = "Hello-World"
-url = f"https://api.github.com/repos/{owner}/{repo}"
+# 1. Initialize the Voice (The "Mouth")
+engine = pyttsx3.init()
+voices = engine.getProperty('voices')
+engine.setProperty('voice', voices[0].id) # 0 for male, 1 for female
 
-# Make the request
-response = requests.get(url)
+def speak(text):
+    print(f"AI: {text}")
+    engine.say(text)
+    engine.runAndWait()
 
-if response.status_code == 200:
-    data = response.json()
-    print(f"Repository Name: {data['name']}")
-    print(f"Stars: {data['stargazers_count']}")
-    print(f"Description: {data['description']}")
-else:
-    print(f"Failed to retrieve data: {response.status_code}")
+# 2. Initialize the Ear (The "Hearing")
+recognizer = sr.Recognizer()
+
+def listen():
+    with sr.Microphone() as source:
+        print("Listening...")
+        audio = recognizer.listen(source)
+        try:
+            # Uses Google or Whisper for translation
+            query = recognizer.recognize_google(audio)
+            print(f"You said: {query}")
+            return query
+        except Exception:
+            return ""
+
+# 3. The Main Loop (The "Working Module")
+def main():
+    speak("Hello! I am your AI. How can I help you today?")
+    
+    while True:
+        user_input = listen()
+        
+        if user_input:
+            if "stop" in user_input.lower():
+                speak("Goodbye!")
+                break
+            
+            # Here you can connect to an LLM like Gemini or GPT
+            # For now, we use a simple echo logic:
+            response = f"You asked about {user_input}. That's interesting!"
+            speak(response)
+
+if __name__ == "__main__":
+    main()
