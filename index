@@ -1,0 +1,85 @@
+import speech_recognition as sr
+import pyttsx3
+import openai
+import os
+
+# --- CONFIGURATION ---
+# Paste your OpenAI API key here
+openai.api_key = "YOUR_OPENAI_API_KEY_HERE"
+
+# Initialize the text-to-speech engine
+engine = pyttsx3.init()
+
+# Optional: Adjust voice speed and volume
+engine.setProperty('rate', 175)
+engine.setProperty('volume', 1.0)
+
+def speak(text):
+    """Converts text to speech"""
+    print(f"Jimmy: {text}")
+    engine.say(text)
+    engine.runAndWait()
+
+def listen():
+    """Listens to microphone and returns text"""
+    recognizer = sr.Recognizer()
+    with sr.Microphone() as source:
+        print("Listening...")
+        recognizer.adjust_for_ambient_noise(source)
+        try:
+            audio = recognizer.listen(source, timeout=5)
+            text = recognizer.recognize_google(audio)
+            return text.lower()
+        except sr.UnknownValueError:
+            return ""
+        except sr.RequestError:
+            speak("I'm having trouble connecting to the internet.")
+            return ""
+        except:
+            return ""
+
+def get_ai_response(prompt):
+    """Sends text to OpenAI and gets a smart response"""
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4o",  # Or "gpt-3.5-turbo" for lower cost
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant named Jimmy. Keep answers concise."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"I encountered an error: {str(e)}"
+
+def main():
+    # 1. Greeting
+    speak("System online. Waiting for command.")
+    
+    while True:
+        # 2. Listen for audio
+        user_input = listen()
+        
+        # 3. Wake Word Detection
+        if "jimmy" in user_input:
+            speak("I'm listening.")
+            
+            # Listen for the actual command
+            command = listen()
+            
+            if command:
+                print(f"You: {command}")
+                
+                # Check for stop command
+                if "stop" in command or "exit" in command:
+                    speak("Shutting down. Goodbye.")
+                    break
+                
+                # 4. Get AI Response
+                response = get_ai_response(command)
+                
+                # 5. Speak Response
+                speak(response)
+
+if __name__ == "__main__":
+    main()
